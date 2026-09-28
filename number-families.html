@@ -169,12 +169,12 @@ dialog .note{color:var(--soft);margin:0 0 14px;font-size:.98rem}
       </div>
       <div id="hint"></div>
       <div id="reveal" hidden>
-        <div id="revealFamily"></div>
         <div class="actions" style="margin-top:14px">
           <button class="btn link" id="showAllBtn"></button>
           <button class="btn" id="collectBtn"></button>
           <button class="btn primary" id="nextBtn"></button>
         </div>
+        <div id="revealFamily"></div>
       </div>
     </section>
 
@@ -232,8 +232,25 @@ const T = {
     setNote:"Minden feladat egy háromtagú számcsaládhoz tartozik. Minden jó válasz után a gyerek összegyűjtheti ugyanannak a feladatnak a többi felírását.",
     max:"Számkör", ops:"Műveletek", both:"+ és −", missing:"Hiányzó szám", any:"Bármelyik szám", result:"Csak az eredmény",
     layout:"Hol van az egyenlőségjel", mix:"Vegyes", cross:"Tízes átlépés, pl. 8 + 5", allow:"Lehet", avoid:"Nélküle", done:"Kész", lang:"HU"
+  },
+  de:{
+    title:"Zahlenfamilien", practice:"Üben", explore:"Entdecken", check:"Prüfen", clear:"Löschen",
+    right:["Ja, genau!","Super gemacht!","Richtig!","Toll!"],
+    wrong1:"Noch nicht ganz. Versuch es noch mal!", wrong2:"Zähl die Klötzchen, das hilft dir.",
+    next:"Nächste Aufgabe", nextRound:"Nächstes Familienmitglied", collect:"Sammle die ganze Familie", showAll:"Alle zeigen",
+    familyDone:"Du hast die ganze Familie gesammelt!",
+    legend:"{a} und {b} ergeben {w}", ways:"Eine Familie, {n} Schreibweisen.", waysSame:"Beide Teile sind gleich, deshalb gibt es nur {n} Schreibweisen.",
+    got:"{k} von {n} gefunden", adding:"Plusaufgaben", taking:"Minusaufgaben",
+    exploreIntro:"Wähle zwei Teile und sieh dir die ganze Familie an.", part:"Teil", whole:"Ganzes", practiceThis:"Diese Familie üben",
+    setTitle:"Einstellungen für Erwachsene",
+    setNote:"Jede Aufgabe gehört zu einer Familie aus drei Zahlen. Nach jeder richtigen Antwort kann Ihr Kind die anderen Schreibweisen derselben Aufgabe sammeln.",
+    max:"Zahlenraum bis", ops:"Rechenarten", both:"+ und −", missing:"Fehlende Zahl", any:"Beliebige Zahl", result:"Nur das Ergebnis",
+    layout:"Wo das = steht", mix:"Gemischt", cross:"Zehnerübergang, z. B. 8 + 5", allow:"Erlaubt", avoid:"Vermeiden", done:"Fertig", lang:"DE"
   }
 };
+
+const LANGS = Object.keys(T);
+const nextLang = () => LANGS[(LANGS.indexOf(S.lang)+1) % LANGS.length];
 
 const FORMS = [
   {t:['p','+','q','=','w'],op:'add',side:'end'},
@@ -253,10 +270,11 @@ function save(key, v){ try{ localStorage.setItem(key, JSON.stringify(v)); }catch
 
 const defaults = {max:20, ops:'both', missing:'any', layout:'mix', cross:true};
 const S = {
-  lang: load('numfam-lang', (navigator.language||'').toLowerCase().startsWith('hu') ? 'hu' : 'en'),
+  lang: load('numfam-lang', null),
   set: Object.assign({}, defaults, load('numfam-settings', {})),
   tab: 'practice'
 };
+if(!T[S.lang]) S.lang = LANGS.find(l => (navigator.language||'').toLowerCase().startsWith(l)) || 'en';
 const P = {p:0,q:0,form:null,pos:0,input:'',tries:0,solved:false,stars:0,last:'',round:null,queue:[],showAll:false};
 const E = {p:7,q:5};
 
@@ -523,7 +541,7 @@ function applyLang(){
   document.title = t('title');
   $('#title').textContent=t('title');
   $('#tabPractice').textContent=t('practice'); $('#tabExplore').textContent=t('explore');
-  $('#langBtn').textContent = S.lang==='en' ? 'HU' : 'EN';
+  $('#langBtn').textContent = T[nextLang()].lang;
   $('#checkBtn').textContent=t('check'); $('#clearBtn').textContent=t('clear');
   $('#collectBtn').textContent=t('collect'); $('#showAllBtn').textContent=t('showAll');
   $('#exploreIntro').textContent=t('exploreIntro');
@@ -534,7 +552,7 @@ function applyLang(){
   if(S.tab==='explore') renderExplore();
   if($('#settings').open) renderSettings();
 }
-$('#langBtn').onclick=()=>{ S.lang = S.lang==='en'?'hu':'en'; save('numfam-lang',S.lang); applyLang(); };
+$('#langBtn').onclick=()=>{ S.lang = nextLang(); save('numfam-lang',S.lang); applyLang(); };
 $('#tabPractice').onclick=()=>setTab('practice');
 $('#tabExplore').onclick=()=>setTab('explore');
 $('#checkBtn').onclick=check;
