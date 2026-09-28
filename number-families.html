@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Number families</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAFCFB; --grid:#DFEAF1; --ink:#1B3D6D; --soft:#5B7291; --line:#BCCDDC; --card:#FFFFFF;
+  --a:#E4730F; --a-bg:#FDE8D3; --b:#7348C9; --b-bg:#EDE4FB; --w:#1B3D6D; --w-bg:#DCE7F5;
+  --hi:#FFE66B; --ok:#1E8A4C; --ok-bg:#DDF3E5; --bad:#C0392B; --empty:#EEF3F7;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#121B26; --grid:#1B2837; --ink:#E6EEF8; --soft:#9DB0C8; --line:#34475F; --card:#172230;
+    --a:#FF9C4A; --a-bg:#3B2715; --b:#AE8BF5; --b-bg:#2A2142; --w:#93BBF2; --w-bg:#1C2D47;
+    --hi:rgba(255,222,70,.30); --ok:#62D194; --ok-bg:#16362A; --bad:#FF7B6B; --empty:#1E2B3B;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121B26; --grid:#1B2837; --ink:#E6EEF8; --soft:#9DB0C8; --line:#34475F; --card:#172230;
+  --a:#FF9C4A; --a-bg:#3B2715; --b:#AE8BF5; --b-bg:#2A2142; --w:#93BBF2; --w-bg:#1C2D47;
+  --hi:rgba(255,222,70,.30); --ok:#62D194; --ok-bg:#16362A; --bad:#FF7B6B; --empty:#1E2B3B;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; min-height:100vh; color:var(--ink);
+  font-family:"Andika","Trebuchet MS","Segoe UI",system-ui,sans-serif;
+  font-size:1.0625rem; line-height:1.5;
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size:24px 24px;
+  font-variant-numeric:tabular-nums;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.wrap{max-width:720px;margin:0 auto;padding:12px 16px 48px}
+
+/* Top bar */
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 0 10px}
+.bar h1{font-size:1.25rem;margin:0 auto 0 0;font-weight:700;letter-spacing:.01em}
+.tabs{display:flex;background:var(--card);border:2px solid var(--line);border-radius:999px;padding:3px}
+.tabs button{border:0;background:none;padding:6px 14px;border-radius:999px;font-weight:700;color:var(--soft)}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+.iconbtn{border:2px solid var(--line);background:var(--card);border-radius:999px;min-width:40px;height:40px;
+  display:inline-flex;align-items:center;justify-content:center;font-weight:700;padding:0 10px}
+.iconbtn svg{width:20px;height:20px}
+
+/* Practice */
+.status{display:flex;justify-content:space-between;align-items:center;min-height:32px;color:var(--soft);font-weight:700}
+.stars{color:var(--a);font-size:1.15rem}
+.dots{display:flex;gap:6px}
+.dots span{width:12px;height:12px;border-radius:50%;border:2px solid var(--b)}
+.dots span.on{background:var(--b)}
+
+.eq{display:flex;justify-content:center;align-items:center;gap:.28em;flex-wrap:nowrap;
+  font-size:clamp(2.8rem,13vw,5.6rem);font-weight:700;line-height:1;padding:28px 0 18px;user-select:none}
+.eq .op{color:var(--soft);font-weight:400}
+.box{display:inline-flex;align-items:center;justify-content:center;min-width:1.45em;height:1.3em;padding:0 .12em;
+  border:4px dashed var(--ink);border-radius:.22em;background:var(--card)}
+.box.filled{border-style:solid}
+.box.ok{border-color:var(--ok);background:var(--ok-bg);color:var(--ok);animation:pop .35s ease}
+.box.bad{border-color:var(--bad);animation:shake .4s ease}
+@keyframes pop{50%{transform:scale(1.15)}}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+
+.msg{min-height:1.8em;text-align:center;font-size:1.25rem;font-weight:700}
+.msg.ok{color:var(--ok)} .msg.bad{color:var(--bad)}
+
+.pad{display:grid;grid-template-columns:repeat(11,1fr);gap:5px;margin:14px 0 12px}
+.pad button{border:2px solid var(--line);background:var(--card);border-radius:10px;min-height:48px;
+  font-size:clamp(1rem,3.6vw,1.35rem);font-weight:700;padding:0}
+.pad button:hover{border-color:var(--ink)}
+.pad button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.pad button:disabled{opacity:.45;cursor:default}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{border:2px solid var(--ink);background:var(--card);border-radius:14px;padding:10px 22px;font-weight:700;font-size:1.1rem}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.link{border:0;background:none;text-decoration:underline;text-underline-offset:3px;color:var(--soft);padding:10px 8px}
+[hidden]{display:none!important}
+
+/* Family view */
+.family{margin-top:22px;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:18px 16px}
+.legend{text-align:center;font-size:1.3rem;font-weight:700;margin:0 0 12px}
+.chip{display:inline-block;min-width:1.7em;padding:0 .3em;border-radius:.35em;text-align:center}
+.chip.a{background:var(--a-bg);color:var(--a)} .chip.b{background:var(--b-bg);color:var(--b)} .chip.w{background:var(--w-bg);color:var(--w)}
+.frame{max-width:360px;margin:0 auto 6px;display:grid;gap:5px}
+.frow{display:flex;gap:10px}
+.five{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;flex:1}
+.cell{aspect-ratio:1;border-radius:5px;background:var(--empty)}
+.cell.a{background:var(--a)} .cell.b{background:var(--b)}
+.ways{text-align:center;color:var(--soft);margin:10px 0 14px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.col h3{margin:0 0 6px;font-size:1rem;color:var(--soft);text-align:center;font-weight:700}
+.fq{display:flex;justify-content:center;gap:.3em;font-size:clamp(1.15rem,4.6vw,1.6rem);font-weight:700;
+  padding:5px 4px;border-radius:10px;margin-bottom:4px}
+.fq .op{color:var(--soft);font-weight:400}
+.fq .a{color:var(--a)} .fq .b{color:var(--b)} .fq .w{color:var(--w)}
+.fq.current{background:var(--hi)}
+.fq.blank span.n{display:inline-block;width:1.2em;border-bottom:3px dotted var(--line);color:transparent}
+.fq.blank .op{opacity:.5}
+.fq.fresh{animation:pop .35s ease}
+
+/* Explore */
+.intro{text-align:center;color:var(--soft);margin:18px 0 6px}
+.steppers{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0}
+.stepper{display:flex;flex-direction:column;align-items:center;gap:4px}
+.stepper .lbl{font-weight:700;color:var(--soft);font-size:.95rem}
+.stepper .ctl{display:flex;align-items:center;gap:6px}
+.stepper .val{font-size:2.6rem;font-weight:700;min-width:1.6em;text-align:center}
+.stepper.a .val{color:var(--a)} .stepper.b .val{color:var(--b)} .stepper.w .val{color:var(--w)}
+.stepper button{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:var(--card);font-size:1.4rem;font-weight:700}
+.bigop{font-size:2.2rem;color:var(--soft);padding-top:22px}
+
+/* Settings */
+dialog{border:2px solid var(--line);border-radius:18px;background:var(--card);color:var(--ink);padding:20px;
+  width:min(520px,calc(100% - 24px));max-height:calc(100% - 24px)}
+dialog::backdrop{background:rgba(10,20,35,.45)}
+dialog h2{margin:0 0 6px;font-size:1.3rem}
+dialog .note{color:var(--soft);margin:0 0 14px;font-size:.98rem}
+.group{margin:0 0 14px}
+.group .glbl{font-weight:700;margin-bottom:6px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:2px solid var(--line);background:var(--paper);border-radius:10px;padding:6px 12px;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+@media (max-width:420px){
+  .pad{gap:3px} .pad button{border-radius:8px;min-height:44px}
+  .cols{gap:6px} .family{padding:14px 8px}
+  .tabs button{padding:6px 10px}
+}
+@media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <h1 id="title">Number families</h1>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabPractice" aria-selected="true"></button>
+      <button role="tab" id="tabExplore" aria-selected="false"></button>
+    </div>
+    <button class="iconbtn" id="langBtn" aria-label="Language"></button>
+    <button class="iconbtn" id="setBtn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <section id="practice">
+      <div class="status">
+        <span class="stars" id="stars" aria-live="polite"></span>
+        <span class="dots" id="dots"></span>
+      </div>
+      <div class="eq" id="eq" aria-live="polite"></div>
+      <div class="msg" id="msg" aria-live="polite"></div>
+      <div class="pad" id="pad"></div>
+      <div class="actions" id="answerActions">
+        <button class="btn" id="clearBtn"></button>
+        <button class="btn primary" id="checkBtn"></button>
+      </div>
+      <div id="hint"></div>
+      <div id="reveal" hidden>
+        <div id="revealFamily"></div>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn link" id="showAllBtn"></button>
+          <button class="btn" id="collectBtn"></button>
+          <button class="btn primary" id="nextBtn"></button>
+        </div>
+      </div>
+    </section>
+
+    <section id="explore" hidden>
+      <p class="intro" id="exploreIntro"></p>
+      <div class="steppers">
+        <div class="stepper a"><span class="lbl" id="lblA"></span>
+          <div class="ctl"><button id="aMinus" aria-label="minus">−</button><span class="val" id="aVal"></span><button id="aPlus" aria-label="plus">+</button></div></div>
+        <span class="bigop">+</span>
+        <div class="stepper b"><span class="lbl" id="lblB"></span>
+          <div class="ctl"><button id="bMinus" aria-label="minus">−</button><span class="val" id="bVal"></span><button id="bPlus" aria-label="plus">+</button></div></div>
+        <span class="bigop">=</span>
+        <div class="stepper w"><span class="lbl" id="lblW"></span>
+          <div class="ctl"><span class="val" id="wVal"></span></div></div>
+      </div>
+      <div id="exploreFamily"></div>
+      <div class="actions" style="margin-top:14px"><button class="btn primary" id="practiceThisBtn"></button></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="settings" aria-labelledby="setTitle">
+  <h2 id="setTitle"></h2>
+  <p class="note" id="setNote"></p>
+  <div id="groups"></div>
+  <div class="actions" style="justify-content:flex-end"><button class="btn primary" id="doneBtn"></button></div>
+</dialog>
+
+<script>
+const T = {
+  en:{
+    title:"Number families", practice:"Practice", explore:"Explore", check:"Check", clear:"Clear",
+    right:["Yes! That's right.","Great job!","Spot on!","You got it!"],
+    wrong1:"Not quite. Try again!", wrong2:"Count the blocks to help you.",
+    next:"Next sum", nextRound:"Next in the family", collect:"Collect the whole family", showAll:"Show all",
+    familyDone:"You collected the whole family!",
+    legend:"{a} and {b} make {w}", ways:"One family, {n} ways to write it.", waysSame:"Both parts are the same, so there are only {n} ways.",
+    got:"{k} of {n} found", adding:"Adding", taking:"Taking away",
+    exploreIntro:"Pick two parts and see the whole family.", part:"Part", whole:"Whole", practiceThis:"Practice this family",
+    setTitle:"Settings for grown-ups",
+    setNote:"Every sum belongs to a family of three numbers. After each correct answer, your child can collect the other ways of writing the same sum.",
+    max:"Numbers up to", ops:"Kinds of sums", both:"+ and −", missing:"Missing number", any:"Any number", result:"Only the result",
+    layout:"Where the = goes", mix:"Mixed", cross:"Crossing ten, like 8 + 5", allow:"Allowed", avoid:"Avoid", done:"Done", lang:"EN"
+  },
+  hu:{
+    title:"Számcsaládok", practice:"Gyakorlás", explore:"Felfedezés", check:"Ellenőrzés", clear:"Törlés",
+    right:["Igen, ez az!","Ügyes vagy!","Pontosan!","Szuper!"],
+    wrong1:"Még nem jó. Próbáld újra!", wrong2:"Számold meg a kockákat, segítenek!",
+    next:"Következő feladat", nextRound:"Következő családtag", collect:"Gyűjtsd össze az egész családot", showAll:"Mutasd mindet",
+    familyDone:"Az egész család megvan!",
+    legend:"{a} és {b} együtt {w}", ways:"Egy család, {n}-féle felírás.", waysSame:"A két rész egyforma, ezért csak {n}-féle felírás van.",
+    got:"{k} / {n} megvan", adding:"Összeadás", taking:"Kivonás",
+    exploreIntro:"Válassz két részt, és nézd meg az egész családot!", part:"Rész", whole:"Egész", practiceThis:"Gyakoroljuk ezt a családot",
+    setTitle:"Beállítások felnőtteknek",
+    setNote:"Minden feladat egy háromtagú számcsaládhoz tartozik. Minden jó válasz után a gyerek összegyűjtheti ugyanannak a feladatnak a többi felírását.",
+    max:"Számkör", ops:"Műveletek", both:"+ és −", missing:"Hiányzó szám", any:"Bármelyik szám", result:"Csak az eredmény",
+    layout:"Hol van az egyenlőségjel", mix:"Vegyes", cross:"Tízes átlépés, pl. 8 + 5", allow:"Lehet", avoid:"Nélküle", done:"Kész", lang:"HU"
+  }
+};
+
+const FORMS = [
+  {t:['p','+','q','=','w'],op:'add',side:'end'},
+  {t:['q','+','p','=','w'],op:'add',side:'end'},
+  {t:['w','=','p','+','q'],op:'add',side:'start'},
+  {t:['w','=','q','+','p'],op:'add',side:'start'},
+  {t:['w','−','p','=','q'],op:'sub',side:'end'},
+  {t:['w','−','q','=','p'],op:'sub',side:'end'},
+  {t:['q','=','w','−','p'],op:'sub',side:'start'},
+  {t:['p','=','w','−','q'],op:'sub',side:'start'},
+];
+const ROLE_CLASS = {p:'a',q:'b',w:'w'};
+const isNum = r => r==='p'||r==='q'||r==='w';
+
+function load(key, def){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; }catch(e){ return def; } }
+function save(key, v){ try{ localStorage.setItem(key, JSON.stringify(v)); }catch(e){} }
+
+const defaults = {max:20, ops:'both', missing:'any', layout:'mix', cross:true};
+const S = {
+  lang: load('numfam-lang', (navigator.language||'').toLowerCase().startsWith('hu') ? 'hu' : 'en'),
+  set: Object.assign({}, defaults, load('numfam-settings', {})),
+  tab: 'practice'
+};
+const P = {p:0,q:0,form:null,pos:0,input:'',tries:0,solved:false,stars:0,last:'',round:null,queue:[],showAll:false};
+const E = {p:7,q:5};
+
+const $ = s => document.querySelector(s);
+const t = k => T[S.lang][k];
+const rand = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+const vals = (p,q) => ({p,q,w:p+q});
+const keyOf = (form,p,q) => { const v=vals(p,q); return form.t.map(r => isNum(r)?v[r]:r).join(' '); };
+
+function family(p,q){
+  const seen = new Set(), out = [];
+  for(const f of FORMS){ const k = keyOf(f,p,q); if(!seen.has(k)){ seen.add(k); out.push({form:f,key:k}); } }
+  return out;
+}
+function unknownPos(form){
+  if(S.set.missing==='result') return form.side==='end' ? 4 : 0;
+  return pick([0,2,4]);
+}
+
+/* ---------- Practice ---------- */
+function newSum(){
+  const max = S.set.max;
+  let p,q,tries=0;
+  while(true){
+    tries++;
+    p = rand(0,max); q = rand(0,max-p);
+    if(tries>400) break;
+    if((p===0||q===0) && Math.random()<0.88) continue;
+    if(!S.set.cross && (p%10)+(q%10)>10) continue;
+    if(`${p},${q}`===P.last || `${q},${p}`===P.last) continue;
+    break;
+  }
+  P.last = `${p},${q}`;
+  let forms = FORMS.filter(f =>
+    (S.set.ops==='both' || f.op===S.set.ops) &&
+    (S.set.layout==='mix' || f.side===S.set.layout));
+  if(!forms.length) forms = FORMS;
+  P.round = null; P.queue = [];
+  loadProblem(p,q,pick(forms));
+}
+function loadProblem(p,q,form){
+  Object.assign(P,{p,q,form,pos:unknownPos(form),input:'',tries:0,solved:false,showAll:false});
+  $('#msg').textContent=''; $('#msg').className='msg';
+  $('#hint').innerHTML='';
+  $('#reveal').hidden = true;
+  $('#answerActions').hidden = false;
+  renderPractice();
+}
+function answer(){ return vals(P.p,P.q)[P.form.t[P.pos]]; }
+
+function renderPractice(state){
+  const eq = $('#eq'); eq.innerHTML='';
+  const v = vals(P.p,P.q);
+  P.form.t.forEach((r,i) => {
+    const s = document.createElement('span');
+    if(!isNum(r)){ s.className='op'; s.textContent=r; }
+    else if(i===P.pos){
+      s.className = 'box' + (P.input!==''?' filled':'') + (state?' '+state:'');
+      s.textContent = P.input;
+      s.setAttribute('aria-label', P.input===''?'?':P.input);
+    } else { s.textContent = v[r]; }
+    eq.appendChild(s);
+  });
+  $('#stars').textContent = P.stars ? '★ ' + P.stars : '';
+  const dots = $('#dots'); dots.innerHTML='';
+  if(P.round){
+    for(let i=0;i<P.round.total;i++){ const d=document.createElement('span'); if(i<P.round.solved.size) d.className='on'; dots.appendChild(d); }
+  }
+  renderPad();
+}
+function renderPad(){
+  const pad = $('#pad'); pad.innerHTML='';
+  const add = (n,col,row) => {
+    const b = document.createElement('button');
+    b.textContent = n; b.style.gridColumn = col; b.style.gridRow = row;
+    b.setAttribute('aria-pressed', String(P.input===String(n)));
+    b.disabled = P.solved;
+    b.onclick = () => { if(P.solved) return; P.input = String(n); renderPractice(); };
+    pad.appendChild(b);
+  };
+  add(0,1,1);
+  for(let n=1;n<=10;n++) add(n,n+1,1);
+  if(S.set.max>10) for(let n=11;n<=20;n++) add(n,n-9,2);
+}
+function typeDigit(d){
+  if(P.solved) return;
+  let s = (P.input==='0' ? '' : P.input) + d;
+  if(s.length>2 || Number(s)>S.set.max) s = d;
+  P.input = s; renderPractice();
+}
+function check(){
+  if(P.solved || P.input==='') return;
+  const msg = $('#msg');
+  if(Number(P.input)===answer()){
+    P.solved = true; P.stars++;
+    const key = keyOf(P.form,P.p,P.q);
+    if(P.round) P.round.solved.add(key);
+    msg.className='msg ok';
+    msg.textContent = (P.round && P.round.solved.size===P.round.total) ? t('familyDone') : pick(t('right'));
+    $('#hint').innerHTML='';
+    renderPractice('ok');
+    showReveal(key);
+  } else {
+    P.tries++;
+    msg.className='msg bad';
+    msg.textContent = P.tries>=2 ? t('wrong2') : t('wrong1');
+    renderPractice('bad');
+    P.input='';
+    setTimeout(()=>renderPractice(),450);
+    if(P.tries>=2 && !$('#hint').firstChild){
+      const f = document.createElement('div'); f.className='family';
+      f.appendChild(frame(P.p,P.q)); $('#hint').appendChild(f);
+    }
+  }
+}
+function showReveal(key){
+  $('#answerActions').hidden = true;
+  $('#reveal').hidden = false;
+  const solvedKeys = P.showAll ? null : (P.round ? P.round.solved : new Set([key]));
+  const box = $('#revealFamily'); box.innerHTML='';
+  box.appendChild(familyView(P.p,P.q,{solvedKeys,current:key,fresh:key}));
+  const roundDone = P.round && P.round.solved.size===P.round.total;
+  $('#collectBtn').hidden = !!P.round;
+  $('#showAllBtn').hidden = P.showAll || roundDone || !!P.round;
+  $('#nextBtn').textContent = (P.round && !roundDone) ? t('nextRound') : t('next');
+}
+function startRound(p,q,alreadySolvedKey){
+  const fam = family(p,q);
+  const solved = new Set(alreadySolvedKey ? [alreadySolvedKey] : []);
+  P.round = {total:fam.length, solved};
+  P.queue = shuffle(fam.filter(e => !solved.has(e.key)));
+  nextFromQueue();
+}
+function nextFromQueue(){
+  const e = P.queue.shift();
+  const round = P.round;
+  loadProblem(P.p===undefined?0:P.p, P.q, e.form);
+  P.round = round;
+  renderPractice();
+}
+function next(){
+  if(P.round && P.queue.length){ nextFromQueue(); }
+  else newSum();
+}
+
+/* ---------- Family view ---------- */
+function chip(n,cls){ return `<span class="chip ${cls}">${n}</span>`; }
+function frame(p,q){
+  const max = Math.max(S.set.max, p+q>10?20:10);
+  const fr = document.createElement('div'); fr.className='frame';
+  fr.setAttribute('aria-hidden','true');
+  let i=0;
+  for(let r=0;r<max/10;r++){
+    const row = document.createElement('div'); row.className='frow';
+    for(let g=0;g<2;g++){
+      const five = document.createElement('div'); five.className='five';
+      for(let c=0;c<5;c++){
+        const cell = document.createElement('div');
+        cell.className = 'cell' + (i<p?' a':(i<p+q?' b':''));
+        five.appendChild(cell); i++;
+      }
+      row.appendChild(five);
+    }
+    fr.appendChild(row);
+  }
+  return fr;
+}
+function familyView(p,q,{solvedKeys=null,current=null,fresh=null}={}){
+  const v = vals(p,q);
+  const wrap = document.createElement('div'); wrap.className='family';
+  const lg = document.createElement('p'); lg.className='legend';
+  lg.innerHTML = t('legend').replace('{a}',chip(p,'a')).replace('{b}',chip(q,'b')).replace('{w}',chip(v.w,'w'));
+  wrap.appendChild(lg);
+  wrap.appendChild(frame(p,q));
+  const fam = family(p,q);
+  const ways = document.createElement('p'); ways.className='ways';
+  let txt = (p===q ? t('waysSame') : t('ways')).replace('{n}',fam.length);
+  if(solvedKeys) txt += ' ' + t('got').replace('{k}',solvedKeys.size).replace('{n}',fam.length);
+  ways.textContent = txt;
+  wrap.appendChild(ways);
+  const cols = document.createElement('div'); cols.className='cols';
+  for(const op of ['add','sub']){
+    const col = document.createElement('div'); col.className='col';
+    const h = document.createElement('h3'); h.textContent = op==='add'?t('adding'):t('taking'); col.appendChild(h);
+    for(const e of fam.filter(x=>x.form.op===op)){
+      const row = document.createElement('div');
+      const hidden = solvedKeys && !solvedKeys.has(e.key);
+      row.className = 'fq' + (hidden?' blank':'') + (e.key===current?' current':'') + (e.key===fresh&&!hidden?' fresh':'');
+      e.form.t.forEach(r=>{
+        const s=document.createElement('span');
+        if(isNum(r)){ s.className='n '+ROLE_CLASS[r]; s.textContent=v[r]; }
+        else { s.className='op'; s.textContent=r; }
+        row.appendChild(s);
+      });
+      if(hidden) row.setAttribute('aria-label','?');
+      col.appendChild(row);
+    }
+    cols.appendChild(col);
+  }
+  wrap.appendChild(cols);
+  return wrap;
+}
+
+/* ---------- Explore ---------- */
+function renderExplore(){
+  const max = S.set.max;
+  if(E.p+E.q>max){ E.q = Math.max(0,max-E.p); if(E.p>max) E.p=max; }
+  $('#aVal').textContent=E.p; $('#bVal').textContent=E.q; $('#wVal').textContent=E.p+E.q;
+  $('#aMinus').disabled = E.p<=0; $('#bMinus').disabled = E.q<=0;
+  $('#aPlus').disabled = E.p+E.q>=max; $('#bPlus').disabled = E.p+E.q>=max;
+  const box = $('#exploreFamily'); box.innerHTML=''; box.appendChild(familyView(E.p,E.q));
+}
+$('#aMinus').onclick=()=>{E.p=Math.max(0,E.p-1);renderExplore();};
+$('#aPlus').onclick=()=>{if(E.p+E.q<S.set.max)E.p++;renderExplore();};
+$('#bMinus').onclick=()=>{E.q=Math.max(0,E.q-1);renderExplore();};
+$('#bPlus').onclick=()=>{if(E.p+E.q<S.set.max)E.q++;renderExplore();};
+$('#practiceThisBtn').onclick=()=>{
+  setTab('practice');
+  P.p=E.p; P.q=E.q; P.last=`${E.p},${E.q}`;
+  startRound(E.p,E.q,null);
+};
+
+/* ---------- Settings ---------- */
+const GROUPS = [
+  {k:'max', l:'max', o:[[10,'0–10'],[20,'0–20']]},
+  {k:'ops', l:'ops', o:[['both','@both'],['add','+'],['sub','−']]},
+  {k:'missing', l:'missing', o:[['any','@any'],['result','@result']]},
+  {k:'layout', l:'layout', o:[['mix','@mix'],['end','7 + 5 = 12'],['start','12 = 7 + 5']]},
+  {k:'cross', l:'cross', o:[[true,'@allow'],[false,'@avoid']]},
+];
+function renderSettings(){
+  const g = $('#groups'); g.innerHTML='';
+  for(const grp of GROUPS){
+    const d = document.createElement('div'); d.className='group';
+    const l = document.createElement('div'); l.className='glbl'; l.textContent=t(grp.l); d.appendChild(l);
+    const seg = document.createElement('div'); seg.className='seg';
+    for(const [val,label] of grp.o){
+      const b = document.createElement('button');
+      b.textContent = label.startsWith('@') ? t(label.slice(1)) : label;
+      b.setAttribute('aria-pressed', String(S.set[grp.k]===val));
+      b.onclick = ()=>{ S.set[grp.k]=val; save('numfam-settings',S.set); renderSettings(); };
+      seg.appendChild(b);
+    }
+    d.appendChild(seg); g.appendChild(d);
+  }
+}
+$('#setBtn').onclick=()=>{ renderSettings(); $('#settings').showModal(); };
+$('#doneBtn').onclick=()=>$('#settings').close();
+$('#settings').addEventListener('close',()=>{ newSum(); renderExplore(); });
+
+/* ---------- Wiring ---------- */
+function setTab(tab){
+  S.tab=tab;
+  $('#tabPractice').setAttribute('aria-selected',String(tab==='practice'));
+  $('#tabExplore').setAttribute('aria-selected',String(tab==='explore'));
+  $('#practice').hidden = tab!=='practice';
+  $('#explore').hidden = tab!=='explore';
+  if(tab==='explore') renderExplore();
+}
+function applyLang(){
+  document.documentElement.lang = S.lang;
+  document.title = t('title');
+  $('#title').textContent=t('title');
+  $('#tabPractice').textContent=t('practice'); $('#tabExplore').textContent=t('explore');
+  $('#langBtn').textContent = S.lang==='en' ? 'HU' : 'EN';
+  $('#checkBtn').textContent=t('check'); $('#clearBtn').textContent=t('clear');
+  $('#collectBtn').textContent=t('collect'); $('#showAllBtn').textContent=t('showAll');
+  $('#exploreIntro').textContent=t('exploreIntro');
+  $('#lblA').textContent=t('part'); $('#lblB').textContent=t('part'); $('#lblW').textContent=t('whole');
+  $('#practiceThisBtn').textContent=t('practiceThis');
+  $('#setTitle').textContent=t('setTitle'); $('#setNote').textContent=t('setNote'); $('#doneBtn').textContent=t('done');
+  if(P.solved) showReveal(keyOf(P.form,P.p,P.q));
+  if(S.tab==='explore') renderExplore();
+  if($('#settings').open) renderSettings();
+}
+$('#langBtn').onclick=()=>{ S.lang = S.lang==='en'?'hu':'en'; save('numfam-lang',S.lang); applyLang(); };
+$('#tabPractice').onclick=()=>setTab('practice');
+$('#tabExplore').onclick=()=>setTab('explore');
+$('#checkBtn').onclick=check;
+$('#clearBtn').onclick=()=>{ P.input=''; renderPractice(); };
+$('#nextBtn').onclick=next;
+$('#collectBtn').onclick=()=>startRound(P.p,P.q,keyOf(P.form,P.p,P.q));
+$('#showAllBtn').onclick=()=>{ P.showAll=true; showReveal(keyOf(P.form,P.p,P.q)); };
+
+document.addEventListener('keydown',e=>{
+  if($('#settings').open || S.tab!=='practice') return;
+  if(e.target.tagName==='BUTTON' && e.key==='Enter') return;
+  if(/^[0-9]$/.test(e.key)){ typeDigit(e.key); e.preventDefault(); }
+  else if(e.key==='Backspace'){ if(!P.solved){ P.input=P.input.slice(0,-1); renderPractice(); } e.preventDefault(); }
+  else if(e.key==='Enter'){ P.solved ? next() : check(); e.preventDefault(); }
+});
+
+applyLang();
+newSum();
+</script>
+</body>
+</html>
