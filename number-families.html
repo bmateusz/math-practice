@@ -275,7 +275,7 @@ const S = {
   tab: 'practice'
 };
 if(!T[S.lang]) S.lang = LANGS.find(l => (navigator.language||'').toLowerCase().startsWith(l)) || 'en';
-const P = {p:0,q:0,form:null,pos:0,input:'',tries:0,solved:false,stars:0,last:'',round:null,queue:[],showAll:false};
+const P = {p:0,q:0,form:null,pos:0,input:'',tries:0,solved:false,stars:load('numfam-stars',0),last:'',round:null,queue:[],showAll:false};
 const E = {p:7,q:5};
 
 const $ = s => document.querySelector(s);
@@ -371,7 +371,7 @@ function check(){
   if(P.solved || P.input==='') return;
   const msg = $('#msg');
   if(Number(P.input)===answer()){
-    P.solved = true; P.stars++;
+    P.solved = true; P.stars++; save('numfam-stars', P.stars);
     const key = keyOf(P.form,P.p,P.q);
     if(P.round) P.round.solved.add(key);
     msg.className='msg ok';
