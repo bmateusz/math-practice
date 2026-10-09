@@ -65,6 +65,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 
 .eq{display:flex;justify-content:center;align-items:center;gap:.28em;flex-wrap:nowrap;
   font-size:clamp(2.8rem,13vw,5.6rem);font-weight:700;line-height:1;padding:28px 0 18px;user-select:none}
+.eq.wide{font-size:clamp(2rem,9.5vw,4.6rem)}
 .eq .op{color:var(--soft);font-weight:400}
 .box{display:inline-flex;align-items:center;justify-content:center;min-width:1.45em;height:1.3em;padding:0 .12em;
   border:4px dashed var(--ink);border-radius:.22em;background:var(--card)}
@@ -333,6 +334,7 @@ function answer(){ return vals(P.p,P.q)[P.form.t[P.pos]]; }
 
 function renderPractice(state){
   const eq = $('#eq'); eq.innerHTML='';
+  eq.classList.toggle('wide', S.set.max>20);
   const v = vals(P.p,P.q);
   P.form.t.forEach((r,i) => {
     const s = document.createElement('span');
@@ -352,6 +354,7 @@ function renderPractice(state){
   renderPad();
 }
 function renderPad(){
+  if(S.set.max>20) return renderDigitPad();
   const pad = $('#pad'); pad.innerHTML='';
   const add = (n,col,row) => {
     const b = document.createElement('button');
@@ -365,10 +368,24 @@ function renderPad(){
   for(let n=1;n<=10;n++) add(n,n+1,1);
   if(S.set.max>10) for(let n=11;n<=20;n++) add(n,n-9,2);
 }
+// Above 20 a button per number is too much: show digits 0-9 plus backspace.
+function renderDigitPad(){
+  const pad = $('#pad'); pad.innerHTML='';
+  const add = (label,col,fn,aria) => {
+    const b = document.createElement('button');
+    b.textContent = label; b.style.gridColumn = col; b.style.gridRow = 1;
+    if(aria) b.setAttribute('aria-label',aria);
+    b.disabled = P.solved; b.onclick = fn;
+    pad.appendChild(b);
+  };
+  add(0,1,()=>typeDigit('0'));
+  for(let n=1;n<=9;n++) add(n,n+1,()=>typeDigit(String(n)));
+  add('⌫',11,()=>{ if(P.solved) return; P.input=P.input.slice(0,-1); renderPractice(); },'Backspace');
+}
 function typeDigit(d){
   if(P.solved) return;
   let s = (P.input==='0' ? '' : P.input) + d;
-  if(s.length>2 || Number(s)>S.set.max) s = d;
+  if(Number(s)>S.set.max) s = d;
   P.input = s; renderPractice();
 }
 function check(){
@@ -506,7 +523,7 @@ $('#practiceThisBtn').onclick=()=>{
 
 /* ---------- Settings ---------- */
 const GROUPS = [
-  {k:'max', l:'max', o:[[10,'0–10'],[20,'0–20']]},
+  {k:'max', l:'max', o:[[10,'0–10'],[20,'0–20'],[100,'0–100']]},
   {k:'ops', l:'ops', o:[['both','@both'],['add','+'],['sub','−']]},
   {k:'missing', l:'missing', o:[['any','@any'],['result','@result']]},
   {k:'layout', l:'layout', o:[['mix','@mix'],['end','7 + 5 = 12'],['start','12 = 7 + 5']]},
