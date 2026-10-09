@@ -102,6 +102,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .cell.a{background:var(--a)} .cell.b{background:var(--b)}
 .ways{text-align:center;color:var(--soft);margin:10px 0 14px}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cols.one{grid-template-columns:1fr}
 .col h3{margin:0 0 6px;font-size:1rem;color:var(--soft);text-align:center;font-weight:700}
 .fq{display:flex;justify-content:center;gap:.3em;font-size:clamp(1.15rem,4.6vw,1.6rem);font-weight:700;
   padding:5px 4px;border-radius:10px;margin-bottom:4px}
@@ -186,7 +187,7 @@ dialog .note{color:var(--soft);margin:0 0 14px;font-size:.98rem}
       <div class="steppers">
         <div class="stepper a"><span class="lbl" id="lblA"></span>
           <div class="ctl"><button id="aMinus" aria-label="minus">−</button><span class="val" id="aVal"></span><button id="aPlus" aria-label="plus">+</button></div></div>
-        <span class="bigop">+</span>
+        <span class="bigop" id="opSign">+</span>
         <div class="stepper b"><span class="lbl" id="lblB"></span>
           <div class="ctl"><button id="bMinus" aria-label="minus">−</button><span class="val" id="bVal"></span><button id="bPlus" aria-label="plus">+</button></div></div>
         <span class="bigop">=</span>
@@ -222,7 +223,9 @@ const T = {
     setTitle:"Settings for grown-ups",
     setNote:"Every sum belongs to a family of three numbers. After each correct answer, your child can collect the other ways of writing the same sum.",
     max:"Numbers up to", ops:"Kinds of sums", both:"+ and −", missing:"Missing number", any:"Any number", result:"Only the result",
-    layout:"Where the = goes", mix:"Mixed", cross:"Crossing ten, like 8 + 5", allow:"Allowed", avoid:"Avoid", done:"Done", lang:"EN"
+    layout:"Where the = goes", mix:"Mixed", cross:"Crossing ten, like 8 + 5", allow:"Allowed", avoid:"Avoid", done:"Done", lang:"EN",
+    titleMul:"Multiplication table", mode:"Practice", modeFam:"Number families", modeMul:"Multiplication table", tables:"Tables up to", order:"Order", rowByRow:"Row by row", random:"Random",
+    multiplying:"Multiplying", legendMul:"{a} times {b} is {w}"
   },
   hu:{
     title:"Számcsaládok", practice:"Gyakorlás", explore:"Felfedezés", check:"Ellenőrzés", clear:"Törlés",
@@ -236,7 +239,9 @@ const T = {
     setTitle:"Beállítások felnőtteknek",
     setNote:"Minden feladat egy háromtagú számcsaládhoz tartozik. Minden jó válasz után a gyerek összegyűjtheti ugyanannak a feladatnak a többi felírását.",
     max:"Számkör", ops:"Műveletek", both:"+ és −", missing:"Hiányzó szám", any:"Bármelyik szám", result:"Csak az eredmény",
-    layout:"Hol van az egyenlőségjel", mix:"Vegyes", cross:"Tízes átlépés, pl. 8 + 5", allow:"Lehet", avoid:"Nélküle", done:"Kész", lang:"HU"
+    layout:"Hol van az egyenlőségjel", mix:"Vegyes", cross:"Tízes átlépés, pl. 8 + 5", allow:"Lehet", avoid:"Nélküle", done:"Kész", lang:"HU",
+    titleMul:"Szorzótábla", mode:"Gyakorlás módja", modeFam:"Számcsaládok", modeMul:"Szorzótábla", tables:"Szorzótábla eddig", order:"Sorrend", rowByRow:"Sorban", random:"Vegyesen",
+    multiplying:"Szorzás", legendMul:"{a} szor {b} az {w}"
   },
   de:{
     title:"Zahlenfamilien", practice:"Üben", explore:"Entdecken", check:"Prüfen", clear:"Löschen",
@@ -250,7 +255,9 @@ const T = {
     setTitle:"Einstellungen für Erwachsene",
     setNote:"Jede Aufgabe gehört zu einer Familie aus drei Zahlen. Nach jeder richtigen Antwort kann Ihr Kind die anderen Schreibweisen derselben Aufgabe sammeln.",
     max:"Zahlenraum bis", ops:"Rechenarten", both:"+ und −", missing:"Fehlende Zahl", any:"Beliebige Zahl", result:"Nur das Ergebnis",
-    layout:"Wo das = steht", mix:"Gemischt", cross:"Zehnerübergang, z. B. 8 + 5", allow:"Erlaubt", avoid:"Vermeiden", done:"Fertig", lang:"DE"
+    layout:"Wo das = steht", mix:"Gemischt", cross:"Zehnerübergang, z. B. 8 + 5", allow:"Erlaubt", avoid:"Vermeiden", done:"Fertig", lang:"DE",
+    titleMul:"Das kleine Einmaleins", mode:"Übungsart", modeFam:"Zahlenfamilien", modeMul:"Das kleine Einmaleins", tables:"Einmaleins bis", order:"Reihenfolge", rowByRow:"Reihe für Reihe", random:"Zufällig",
+    multiplying:"Malaufgaben", legendMul:"{a} mal {b} ist {w}"
   }
 };
 
@@ -267,20 +274,29 @@ const FORMS = [
   {t:['q','=','w','−','p'],op:'sub',side:'start'},
   {t:['p','=','w','−','q'],op:'sub',side:'start'},
 ];
+const FORMS_MUL = [
+  {t:['p','×','q','=','w'],op:'mul',side:'end',primary:true},
+  {t:['q','×','p','=','w'],op:'mul',side:'end'},
+  {t:['w','=','p','×','q'],op:'mul',side:'start',primary:true},
+  {t:['w','=','q','×','p'],op:'mul',side:'start'},
+];
+const isMul = () => S.set.mode==='mul';
+const formList = () => isMul() ? FORMS_MUL : FORMS;
+const maxVal = () => isMul() ? 100 : S.set.max;
 const ROLE_CLASS = {p:'a',q:'b',w:'w'};
 const isNum = r => r==='p'||r==='q'||r==='w';
 
 function load(key, def){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; }catch(e){ return def; } }
 function save(key, v){ try{ localStorage.setItem(key, JSON.stringify(v)); }catch(e){} }
 
-const defaults = {max:20, ops:'both', missing:'any', layout:'mix', cross:true};
+const defaults = {mode:'add', max:20, ops:'both', missing:'any', layout:'mix', cross:true, tables:10, order:'random', mmissing:'result'};
 const S = {
   lang: load('numfam-lang', null),
   set: Object.assign({}, defaults, load('numfam-settings', {})),
   tab: 'practice'
 };
-if(!T[S.lang]) S.lang = LANGS.find(l => (navigator.language||'').toLowerCase().startsWith(l)) || 'en';
-const P = {p:0,q:0,form:null,pos:0,input:'',tries:0,solved:false,stars:load('numfam-stars',0),last:'',round:null,queue:[],showAll:false};
+if(!T[S.lang]) S.lang = 'hu';
+const P = {p:0,q:0,form:null,pos:0,input:'',tries:0,solved:false,stars:load('numfam-stars',0),last:'',round:null,queue:[],showAll:false,seq:null};
 const E = {p:7,q:5};
 
 const $ = s => document.querySelector(s);
@@ -288,21 +304,39 @@ const t = k => T[S.lang][k];
 const rand = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];
 function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
-const vals = (p,q) => ({p,q,w:p+q});
+const vals = (p,q) => ({p,q,w:isMul()?p*q:p+q});
 const keyOf = (form,p,q) => { const v=vals(p,q); return form.t.map(r => isNum(r)?v[r]:r).join(' '); };
 
 function family(p,q){
   const seen = new Set(), out = [];
-  for(const f of FORMS){ const k = keyOf(f,p,q); if(!seen.has(k)){ seen.add(k); out.push({form:f,key:k}); } }
+  for(const f of formList()){ const k = keyOf(f,p,q); if(!seen.has(k)){ seen.add(k); out.push({form:f,key:k}); } }
   return out;
 }
 function unknownPos(form){
-  if(S.set.missing==='result') return form.side==='end' ? 4 : 0;
+  if((isMul() ? S.set.mmissing : S.set.missing)==='result') return form.side==='end' ? 4 : 0;
   return pick([0,2,4]);
 }
 
 /* ---------- Practice ---------- */
+function nextMulPair(){
+  const n = S.set.tables, list = [];
+  for(let a=1;a<=n;a++) for(let b=1;b<=10;b++) list.push([a,b]);
+  if(S.set.order==='random'){
+    let pr; do{ pr = pick(list); }while(list.length>1 && `${pr[0]},${pr[1]}`===P.last);
+    return pr;
+  }
+  if(P.seq===null || P.seq>=list.length) P.seq = 0;
+  return list[P.seq++];
+}
 function newSum(){
+  if(isMul()){
+    const [p,q] = nextMulPair();
+    P.last = `${p},${q}`;
+    let forms = FORMS_MUL.filter(f => (S.set.layout==='mix' || f.side===S.set.layout) && (S.set.order==='random' || f.primary));
+    if(!forms.length) forms = FORMS_MUL.filter(f => f.primary);
+    P.round = null; P.queue = [];
+    return loadProblem(p,q,pick(forms));
+  }
   const max = S.set.max;
   let p,q,tries=0;
   while(true){
@@ -334,7 +368,7 @@ function answer(){ return vals(P.p,P.q)[P.form.t[P.pos]]; }
 
 function renderPractice(state){
   const eq = $('#eq'); eq.innerHTML='';
-  eq.classList.toggle('wide', S.set.max>20);
+  eq.classList.toggle('wide', maxVal()>20);
   const v = vals(P.p,P.q);
   P.form.t.forEach((r,i) => {
     const s = document.createElement('span');
@@ -354,7 +388,7 @@ function renderPractice(state){
   renderPad();
 }
 function renderPad(){
-  if(S.set.max>20) return renderDigitPad();
+  if(maxVal()>20) return renderDigitPad();
   const pad = $('#pad'); pad.innerHTML='';
   const add = (n,col,row) => {
     const b = document.createElement('button');
@@ -385,7 +419,7 @@ function renderDigitPad(){
 function typeDigit(d){
   if(P.solved) return;
   let s = (P.input==='0' ? '' : P.input) + d;
-  if(Number(s)>S.set.max) s = d;
+  if(Number(s)>maxVal()) s = d;
   P.input = s; renderPractice();
 }
 function check(){
@@ -447,6 +481,14 @@ function next(){
 /* ---------- Family view ---------- */
 function chip(n,cls){ return `<span class="chip ${cls}">${n}</span>`; }
 function frame(p,q){
+  if(isMul()){
+    const fr = document.createElement('div'); fr.className='frame';
+    fr.setAttribute('aria-hidden','true');
+    fr.style.gridTemplateColumns = `repeat(${q},1fr)`;
+    fr.style.maxWidth = Math.min(360, q*36) + 'px';
+    for(let i=0;i<p*q;i++){ const c = document.createElement('div'); c.className='cell a'; fr.appendChild(c); }
+    return fr;
+  }
   const max = Math.max(S.set.max, p+q>10?20:10);
   const fr = document.createElement('div'); fr.className='frame';
   fr.setAttribute('aria-hidden','true');
@@ -470,7 +512,7 @@ function familyView(p,q,{solvedKeys=null,current=null,fresh=null}={}){
   const v = vals(p,q);
   const wrap = document.createElement('div'); wrap.className='family';
   const lg = document.createElement('p'); lg.className='legend';
-  lg.innerHTML = t('legend').replace('{a}',chip(p,'a')).replace('{b}',chip(q,'b')).replace('{w}',chip(v.w,'w'));
+  lg.innerHTML = t(isMul()?'legendMul':'legend').replace('{a}',chip(p,'a')).replace('{b}',chip(q,'b')).replace('{w}',chip(v.w,'w'));
   wrap.appendChild(lg);
   wrap.appendChild(frame(p,q));
   const fam = family(p,q);
@@ -479,10 +521,10 @@ function familyView(p,q,{solvedKeys=null,current=null,fresh=null}={}){
   if(solvedKeys) txt += ' ' + t('got').replace('{k}',solvedKeys.size).replace('{n}',fam.length);
   ways.textContent = txt;
   wrap.appendChild(ways);
-  const cols = document.createElement('div'); cols.className='cols';
-  for(const op of ['add','sub']){
+  const cols = document.createElement('div'); cols.className='cols' + (isMul()?' one':'');
+  for(const op of (isMul() ? ['mul'] : ['add','sub'])){
     const col = document.createElement('div'); col.className='col';
-    const h = document.createElement('h3'); h.textContent = op==='add'?t('adding'):t('taking'); col.appendChild(h);
+    const h = document.createElement('h3'); h.textContent = op==='add'?t('adding'):op==='sub'?t('taking'):t('multiplying'); col.appendChild(h);
     for(const e of fam.filter(x=>x.form.op===op)){
       const row = document.createElement('div');
       const hidden = solvedKeys && !solvedKeys.has(e.key);
@@ -503,18 +545,22 @@ function familyView(p,q,{solvedKeys=null,current=null,fresh=null}={}){
 }
 
 /* ---------- Explore ---------- */
+const lo = () => isMul() ? 1 : 0;
+const canGrow = k => isMul() ? E[k]<10 : E.p+E.q<S.set.max;
 function renderExplore(){
   const max = S.set.max;
-  if(E.p+E.q>max){ E.q = Math.max(0,max-E.p); if(E.p>max) E.p=max; }
-  $('#aVal').textContent=E.p; $('#bVal').textContent=E.q; $('#wVal').textContent=E.p+E.q;
-  $('#aMinus').disabled = E.p<=0; $('#bMinus').disabled = E.q<=0;
-  $('#aPlus').disabled = E.p+E.q>=max; $('#bPlus').disabled = E.p+E.q>=max;
+  if(isMul()){ E.p = Math.min(10,Math.max(1,E.p)); E.q = Math.min(10,Math.max(1,E.q)); }
+  else if(E.p+E.q>max){ E.q = Math.max(0,max-E.p); if(E.p>max) E.p=max; }
+  $('#opSign').textContent = isMul() ? '×' : '+';
+  $('#aVal').textContent=E.p; $('#bVal').textContent=E.q; $('#wVal').textContent=vals(E.p,E.q).w;
+  $('#aMinus').disabled = E.p<=lo(); $('#bMinus').disabled = E.q<=lo();
+  $('#aPlus').disabled = !canGrow('p'); $('#bPlus').disabled = !canGrow('q');
   const box = $('#exploreFamily'); box.innerHTML=''; box.appendChild(familyView(E.p,E.q));
 }
-$('#aMinus').onclick=()=>{E.p=Math.max(0,E.p-1);renderExplore();};
-$('#aPlus').onclick=()=>{if(E.p+E.q<S.set.max)E.p++;renderExplore();};
-$('#bMinus').onclick=()=>{E.q=Math.max(0,E.q-1);renderExplore();};
-$('#bPlus').onclick=()=>{if(E.p+E.q<S.set.max)E.q++;renderExplore();};
+$('#aMinus').onclick=()=>{E.p=Math.max(lo(),E.p-1);renderExplore();};
+$('#aPlus').onclick=()=>{if(canGrow('p'))E.p++;renderExplore();};
+$('#bMinus').onclick=()=>{E.q=Math.max(lo(),E.q-1);renderExplore();};
+$('#bPlus').onclick=()=>{if(canGrow('q'))E.q++;renderExplore();};
 $('#practiceThisBtn').onclick=()=>{
   setTab('practice');
   P.p=E.p; P.q=E.q; P.last=`${E.p},${E.q}`;
@@ -522,7 +568,15 @@ $('#practiceThisBtn').onclick=()=>{
 };
 
 /* ---------- Settings ---------- */
-const GROUPS = [
+const MODE_GROUP = {k:'mode', l:'mode', o:[['add','@modeFam'],['mul','@modeMul']]};
+const groups = () => isMul() ? [
+  MODE_GROUP,
+  {k:'tables', l:'tables', o:Array.from({length:10},(_,i)=>[i+1,String(i+1)])},
+  {k:'order', l:'order', o:[['row','@rowByRow'],['random','@random']]},
+  {k:'mmissing', l:'missing', o:[['result','@result'],['any','@any']]},
+  {k:'layout', l:'layout', o:[['mix','@mix'],['end','7 × 5 = 35'],['start','35 = 7 × 5']]},
+] : [
+  MODE_GROUP,
   {k:'max', l:'max', o:[[10,'0–10'],[20,'0–20'],[100,'0–100']]},
   {k:'ops', l:'ops', o:[['both','@both'],['add','+'],['sub','−']]},
   {k:'missing', l:'missing', o:[['any','@any'],['result','@result']]},
@@ -531,7 +585,7 @@ const GROUPS = [
 ];
 function renderSettings(){
   const g = $('#groups'); g.innerHTML='';
-  for(const grp of GROUPS){
+  for(const grp of groups()){
     const d = document.createElement('div'); d.className='group';
     const l = document.createElement('div'); l.className='glbl'; l.textContent=t(grp.l); d.appendChild(l);
     const seg = document.createElement('div'); seg.className='seg';
@@ -547,7 +601,7 @@ function renderSettings(){
 }
 $('#setBtn').onclick=()=>{ renderSettings(); $('#settings').showModal(); };
 $('#doneBtn').onclick=()=>$('#settings').close();
-$('#settings').addEventListener('close',()=>{ newSum(); renderExplore(); });
+$('#settings').addEventListener('close',()=>{ P.seq=null; updateTitle(); newSum(); renderExplore(); });
 
 /* ---------- Space celebrations ---------- */
 const FX = (() => {
@@ -978,10 +1032,13 @@ function setTab(tab){
   $('#explore').hidden = tab!=='explore';
   if(tab==='explore') renderExplore();
 }
+function updateTitle(){
+  const s = t(isMul() ? 'titleMul' : 'title');
+  document.title = s; $('#title').textContent = s;
+}
 function applyLang(){
   document.documentElement.lang = S.lang;
-  document.title = t('title');
-  $('#title').textContent=t('title');
+  updateTitle();
   $('#tabPractice').textContent=t('practice'); $('#tabExplore').textContent=t('explore');
   $('#langBtn').textContent = T[nextLang()].lang;
   $('#checkBtn').textContent=t('check'); $('#clearBtn').textContent=t('clear');
